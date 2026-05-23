@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Smart Task Manager{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Header -->
+    <header class="dashboard-header glass">
+        <div class="header-left">
+            <i class="fa-solid fa-layer-group brand-icon"></i>
+            <div>
+                <h1>SANKAR GROUP</h1>
+                <p>Task Workspace</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-profile">
+                <span class="user-avatar"><i class="fa-solid fa-user-tie"></i></span>
+                <span class="username">{{ username }}</span>
+                <span id="ws-status" class="ws-badge disconnected">
+                    <i class="fa-solid fa-circle-nodes"></i> Offline
+                </span>
+            </div>
+            <a href="/logout" class="btn btn-outline btn-sm">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+            </a>
+        </div>
+    </header>
+
+    <!-- Analytics Dashboard -->
+    <section class="analytics-section">
+        <div class="analytics-grid">
+            <div class="metric-card glass" id="card-total">
+                <div class="metric-icon total"><i class="fa-solid fa-list-check"></i></div>
+                <div class="metric-details">
+                    <h3>Total Tasks</h3>
+                    <p class="metric-value" id="val-total">{{ stats.total_tasks }}</p>
+                </div>
+            </div>
+            <div class="metric-card glass" id="card-completed">
+                <div class="metric-icon completed"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="metric-details">
+                    <h3>Completed</h3>
+                    <p class="metric-value" id="val-completed">{{ stats.completed_tasks }}</p>
+                </div>
+            </div>
+            <div class="metric-card glass" id="card-pending">
+                <div class="metric-icon pending"><i class="fa-solid fa-clock"></i></div>
+                <div class="metric-details">
+                    <h3>Pending</h3>
+                    <p class="metric-value" id="val-pending">{{ stats.pending_tasks }}</p>
+                </div>
+            </div>
+            <div class="metric-card glass" id="card-percentage">
+                <div class="metric-icon percentage"><i class="fa-solid fa-chart-pie"></i></div>
+                <div class="metric-details">
+                    <h3>Completion Rate</h3>
+                    <div class="metric-rate-wrapper">
+                        <p class="metric-value" id="val-percentage">{{ stats.completion_percentage }}%</p>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="fill-percentage" style="width: {{ stats.completion_percentage }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workspace Area -->
+    <main class="workspace-grid">
+        <!-- Task Boards -->
+        <section class="tasks-workspace glass">
+            <div class="workspace-header">
+                <h2><i class="fa-solid fa-bars-progress"></i> Task Workspace</h2>
+                <div class="task-filters">
+                    <button class="filter-btn active" id="btn-filter-all" onclick="filterTasks('all')">All</button>
+                    <button class="filter-btn" id="btn-filter-pending" onclick="filterTasks('pending')">Pending</button>
+                    <button class="filter-btn" id="btn-filter-completed" onclick="filterTasks('completed')">Completed</button>
+                </div>
+            </div>
+            
+            {% set pending_tasks = tasks | selectattr("status", "equalto", "Pending") | list %}
+            {% set completed_tasks = tasks | selectattr("status", "equalto", "Completed") | list %}
+            
+            <div class="tasks-columns">
+                <!-- Pending Column -->
+                <div class="task-column" id="col-pending">
+                    <div class="column-header">
+                        <h3><i class="fa-solid fa-clock icon-pending"></i> Pending Tasks</h3>
+                        <span class="column-badge" id="badge-pending">{{ pending_tasks | length }}</span>
+                    </div>
+                    <div class="tasks-list" id="list-pending">
+                        {% if pending_tasks | length > 0 %}
+                            {% for task in pending_tasks %}
+                                <div class="task-card prio-{{ task.priority.lower() }} pending" data-id="{{ task.id }}">
+                                    <div class="task-card-header">
+                                        <h4>{{ task.title }}</h4>
+                                        <span class="task-prio-badge">{{ task.priority }}</span>
+                                    </div>
+                                    {% if task.description %}
+                                        <p class="task-card-desc">{{ task.description }}</p>
+                                    {% endif %}
+                                    <div class="task-card-footer">
+                                        <span><i class="fa-regular fa-calendar-days"></i> {{ task.created_date.strftime('%b %d, %Y, %I:%M %p') }}</span>
+                                        <div class="task-actions">
+                                            <a href="/tasks/toggle/{{ task.id }}" class="action-btn complete" title="Mark as completed">
+                                                <i class="fa-solid fa-check"></i>
+                                            </a>
+                                            <button class="action-btn edit" onclick="openEditModal({{ task.id }}, '{{ task.title | escape }}', '{{ task.priority }}', '{{ task.status }}', '{{ (task.description or '') | escape }}')" title="Edit task">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <a href="/tasks/delete/{{ task.id }}" class="action-btn delete" onclick="return confirm('Are you sure you want to delete this task?')" title="Delete task">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fa-solid fa-calendar-check"></i>
+                                <p>No pending tasks found</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Completed Column -->
+                <div class="task-column" id="col-completed">
+                    <div class="column-header">
+                        <h3><i class="fa-solid fa-circle-check icon-completed"></i> Completed Tasks</h3>
+                        <span class="column-badge" id="badge-completed">{{ completed_tasks | length }}</span>
+                    </div>
+                    <div class="tasks-list" id="list-completed">
+                        {% if completed_tasks | length > 0 %}
+                            {% for task in completed_tasks %}
+                                <div class="task-card prio-{{ task.priority.lower() }} completed" data-id="{{ task.id }}">
+                                    <div class="task-card-header">
+                                        <h4>{{ task.title }}</h4>
+                                        <span class="task-prio-badge">{{ task.priority }}</span>
+                                    </div>
+                                    {% if task.description %}
+                                        <p class="task-card-desc">{{ task.description }}</p>
+                                    {% endif %}
+                                    <div class="task-card-footer">
+                                        <span><i class="fa-regular fa-calendar-days"></i> {{ task.created_date.strftime('%b %d, %Y, %I:%M %p') }}</span>
+                                        <div class="task-actions">
+                                            <a href="/tasks/toggle/{{ task.id }}" class="action-btn complete" title="Mark as pending">
+                                                <i class="fa-solid fa-rotate-left"></i>
+                                            </a>
+                                            <button class="action-btn edit" onclick="openEditModal({{ task.id }}, '{{ task.title | escape }}', '{{ task.priority }}', '{{ task.status }}', '{{ (task.description or '') | escape }}')" title="Edit task">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <a href="/tasks/delete/{{ task.id }}" class="action-btn delete" onclick="return confirm('Are you sure you want to delete this task?')" title="Delete task">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fa-solid fa-clipboard-question"></i>
+                                <p>No completed tasks found</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Sidebar (Controls / Creation) -->
+        <aside class="controls-sidebar">
+            <!-- Add Task Form -->
+            <div class="control-card glass">
+                <h3><i class="fa-solid fa-plus-circle text-primary"></i> Create Task</h3>
+                <form id="form-add-task" method="POST" action="/tasks/add">
+                    <div class="form-group">
+                        <label for="task-title">Title</label>
+                        <input type="text" id="task-title" name="title" placeholder="What needs to be done?" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="task-priority">Priority</label>
+                        <select id="task-priority" name="priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-description">Description</label>
+                        <textarea id="task-description" name="description" rows="4" placeholder="Add description details..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fa-solid fa-square-plus"></i> Add Task
+                    </button>
+                </form>
+            </div>
+        </aside>
+    </main>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="edit-modal" class="modal-overlay">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-edit"></i> Edit Task</h3>
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form id="form-edit-task" method="POST" action="">
+            <input type="hidden" id="edit-task-id" name="id">
+            <div class="form-group">
+                <label for="edit-task-title">Title</label>
+                <input type="text" id="edit-task-title" name="title" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="edit-task-priority">Priority</label>
+                <select id="edit-task-priority" name="priority">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-task-status">Status</label>
+                <select id="edit-task-status" name="status">
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-task-description">Description</label>
+                <textarea id="edit-task-description" name="description" rows="4"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Live Notification Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openEditModal(id, title, priority, status, description) {
+        document.getElementById('edit-task-id').value = id;
+        document.getElementById('edit-task-title').value = title;
+        document.getElementById('edit-task-priority').value = priority;
+        document.getElementById('edit-task-status').value = status;
+        document.getElementById('edit-task-description').value = description;
+        
+        // Dynamically set form action target
+        document.getElementById('form-edit-task').action = `/tasks/edit/${id}`;
+        
+        document.getElementById('edit-modal').classList.add('active');
+    }
+
+    function closeEditModal() {
+        document.getElementById('edit-modal').classList.remove('active');
+        document.getElementById('form-edit-task').reset();
+    }
+
+    function filterTasks(filter) {
+        document.querySelectorAll('.task-filters .filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-filter-${filter}`).classList.add('active');
+        
+        const colPending = document.getElementById('col-pending');
+        const colCompleted = document.getElementById('col-completed');
+        const colsContainer = document.querySelector('.tasks-columns');
+        
+        if (filter === 'pending') {
+            colPending.style.display = 'flex';
+            colCompleted.style.display = 'none';
+            colsContainer.style.gridTemplateColumns = '1fr';
+        } else if (filter === 'completed') {
+            colPending.style.display = 'none';
+            colCompleted.style.display = 'flex';
+            colsContainer.style.gridTemplateColumns = '1fr';
+        } else {
+            colPending.style.display = 'flex';
+            colCompleted.style.display = 'flex';
+            if (window.innerWidth > 768) {
+                colsContainer.style.gridTemplateColumns = '1fr 1fr';
+            } else {
+                colsContainer.style.gridTemplateColumns = '1fr';
+            }
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        const activeBtn = document.querySelector('.task-filters .filter-btn.active');
+        if (activeBtn && activeBtn.id === 'btn-filter-all') {
+            const colsContainer = document.querySelector('.tasks-columns');
+            if (window.innerWidth > 768) {
+                colsContainer.style.gridTemplateColumns = '1fr 1fr';
+            } else {
+                colsContainer.style.gridTemplateColumns = '1fr';
+            }
+        }
+    });
+</script>
+<!-- App JavaScript -->
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

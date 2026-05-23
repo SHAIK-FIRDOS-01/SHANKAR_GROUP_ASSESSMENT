@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - Smart Task Manager{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card glass">
+        <div class="auth-header">
+            <div class="brand">
+                <i class="fa-solid fa-layer-group brand-icon animate-pulse"></i>
+                <h2>SANKAR GROUP</h2>
+            </div>
+            <p>Smart Task Management System</p>
+        </div>
+        
+        <div class="auth-tabs">
+            <button id="tab-login" class="auth-tab {% if active_tab == 'login' or not active_tab %}active{% endif %}" onclick="switchTab('login')">Login</button>
+            <button id="tab-register" class="auth-tab {% if active_tab == 'register' %}active{% endif %}" onclick="switchTab('register')">Register</button>
+        </div>
+        
+        <!-- Login Form -->
+        <form id="form-login" class="auth-form {% if active_tab == 'login' or not active_tab %}active{% endif %}" action="/login" method="POST">
+            <div class="form-group">
+                <label for="login-username"><i class="fa-regular fa-user"></i> Username</label>
+                <input type="text" id="login-username" name="username" placeholder="Enter username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
+                <input type="password" id="login-password" name="password" placeholder="Enter password" required autocomplete="current-password">
+            </div>
+            <div class="error-msg" id="login-error">
+                {% if active_tab == 'login' and error %}
+                    {{ error }}
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                <span>Sign In</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </button>
+        </form>
+        
+        <!-- Register Form -->
+        <form id="form-register" class="auth-form {% if active_tab == 'register' %}active{% endif %}" action="/register" method="POST">
+            <div class="form-group">
+                <label for="register-username"><i class="fa-regular fa-user"></i> Username</label>
+                <input type="text" id="register-username" name="username" placeholder="Choose a username" required autocomplete="username">
+                <small class="form-tip">Minimum 3 characters</small>
+            </div>
+            <div class="form-group">
+                <label for="register-password"><i class="fa-solid fa-lock"></i> Password</label>
+                <input type="password" id="register-password" name="password" placeholder="Create a password" required autocomplete="new-password">
+                <small class="form-tip">Minimum 6 characters</small>
+            </div>
+            <div class="error-msg" id="register-error">
+                {% if active_tab == 'register' and error %}
+                    {{ error }}
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-accent btn-block">
+                <span>Create Account</span> <i class="fa-solid fa-user-plus"></i>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.auth-tab').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.auth-form').forEach(el => el.classList.remove('active'));
+        
+        // Clear active error messages when switching tabs
+        const loginErr = document.getElementById('login-error');
+        const regErr = document.getElementById('register-error');
+        if (loginErr) loginErr.textContent = '';
+        if (regErr) regErr.textContent = '';
+        
+        if (tab === 'login') {
+            document.getElementById('tab-login').classList.add('active');
+            document.getElementById('form-login').classList.add('active');
+        } else {
+            document.getElementById('tab-register').classList.add('active');
+            document.getElementById('form-register').classList.add('active');
+        }
+    }
+</script>
+{% endblock %}
